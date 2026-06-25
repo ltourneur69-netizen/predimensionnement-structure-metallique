@@ -1,0 +1,636 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Prédimensionnement Structure Métallique</title>
+<style>
+  *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+  :root{
+    --bg:#f5f4f0;--surf:#fff;--surf2:#f1f0ec;
+    --bord:rgba(0,0,0,.12);--bord2:rgba(0,0,0,.22);
+    --tx:#1a1a18;--tx2:#5a5a56;--tx3:#8a8a84;
+    --blue:#185FA5;--bluebg:#E6F1FB;--bluetx:#0C447C;
+    --green:#0F6E56;--greenbg:#E1F5EE;--greentx:#085041;
+    --amber:#BA7517;--amberbg:#FAEEDA;--ambertx:#633806;
+    --red:#A32D2D;--redbg:#FCEBEB;--redtx:#501313;
+    --r:10px;--rs:6px;
+    --sh:0 1px 3px rgba(0,0,0,.08),0 1px 2px rgba(0,0,0,.06)
+  }
+  @media(prefers-color-scheme:dark){:root{
+    --bg:#1a1a18;--surf:#242422;--surf2:#2e2e2b;
+    --bord:rgba(255,255,255,.10);--bord2:rgba(255,255,255,.20);
+    --tx:#e8e6de;--tx2:#a8a69e;--tx3:#6a6860;
+    --bluebg:#0c1f35;--bluetx:#85B7EB;
+    --greenbg:#051f16;--greentx:#5DCAA5;
+    --amberbg:#2a1c04;--ambertx:#FAC775;
+    --redbg:#2a0d0d;--redtx:#F09595
+  }}
+  body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;background:var(--bg);color:var(--tx);font-size:14px;line-height:1.5;min-height:100vh}
+  header{background:var(--surf);border-bottom:.5px solid var(--bord);padding:0 24px;display:flex;align-items:center;gap:14px;height:60px;position:sticky;top:0;z-index:100;box-shadow:var(--sh)}
+  .hico{width:36px;height:36px;background:var(--blue);border-radius:var(--rs);display:flex;align-items:center;justify-content:center;flex-shrink:0}
+  .hico svg{width:20px;height:20px;stroke:#fff;fill:none}
+  header h1{font-size:16px;font-weight:600;color:var(--tx)}
+  header p{font-size:12px;color:var(--tx3)}
+  .hbadge{margin-left:auto;font-size:11px;background:var(--amberbg);color:var(--ambertx);padding:3px 10px;border-radius:20px;font-weight:500;white-space:nowrap}
+  .layout{display:grid;grid-template-columns:390px 1fr;min-height:calc(100vh - 60px)}
+  .sidebar{background:var(--surf);border-right:.5px solid var(--bord);overflow-y:auto;padding:20px;display:flex;flex-direction:column;gap:14px}
+  .main{overflow-y:auto;padding:20px;display:flex;flex-direction:column;gap:14px}
+  .card{background:var(--surf);border:.5px solid var(--bord);border-radius:var(--r);padding:16px 18px;box-shadow:var(--sh)}
+  .ctitle{font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.08em;color:var(--tx3);margin-bottom:12px;display:flex;align-items:center;gap:6px}
+  .ctitle svg{width:14px;height:14px;stroke:currentColor;fill:none;flex-shrink:0}
+  .field{margin-bottom:12px}.field:last-child{margin-bottom:0}
+  label{display:block;font-size:12px;color:var(--tx2);margin-bottom:4px}
+  label span{color:var(--tx3);font-size:11px}
+  input[type="number"],select{width:100%;height:36px;padding:0 10px;background:var(--surf2);border:.5px solid var(--bord2);border-radius:var(--rs);color:var(--tx);font-size:13px;font-family:inherit;outline:none;transition:border-color .15s,box-shadow .15s}
+  input[type="number"]:focus,select:focus{border-color:var(--blue);box-shadow:0 0 0 3px rgba(24,95,165,.15)}
+  input.warn{border-color:var(--amber)!important;background:var(--amberbg)!important}
+  input.err{border-color:var(--red)!important;background:var(--redbg)!important}
+  .g2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+  .g3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px}
+  /* ALERT BANNERS */
+  .alert{display:none;font-size:11px;line-height:1.5;border-radius:var(--rs);padding:7px 10px;margin-top:6px;border-left:3px solid}
+  .alert.show{display:block}
+  .alert-warn{background:var(--amberbg);color:var(--ambertx);border-color:var(--amber)}
+  .alert-err{background:var(--redbg);color:var(--redtx);border-color:var(--red)}
+  .alert-ok{background:var(--greenbg);color:var(--greentx);border-color:var(--green)}
+  /* ACIER SELECTOR */
+  .acier-cards{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-top:4px}
+  .acier-card{border:.5px solid var(--bord2);border-radius:var(--rs);padding:8px 8px 6px;cursor:pointer;transition:border-color .15s,background .15s;text-align:center;user-select:none}
+  .acier-card:hover{border-color:var(--blue);background:var(--bluebg)}
+  .acier-card.sel{border-color:var(--blue);background:var(--bluebg)}
+  .acier-card .ac-name{font-size:13px;font-weight:700;color:var(--tx);margin-bottom:2px}
+  .acier-card .ac-fy{font-size:11px;color:var(--tx3);margin-bottom:4px}
+  .acier-card .ac-badge{font-size:10px;font-weight:600;padding:2px 6px;border-radius:3px;display:inline-block}
+  .badge-eco{background:#E8F5E9;color:#1B5E20}
+  .badge-std{background:var(--bluebg);color:var(--bluetx)}
+  .badge-haut{background:#F3E5F5;color:#4A148C}
+  .acier-card .ac-desc{font-size:10px;color:var(--tx3);margin-top:4px;line-height:1.4;text-align:left}
+  /* PORTEE INPUT + ALERT */
+  .portee-wrap{position:relative}
+  /* LEVEL ROWS */
+  .lvrow{display:flex;align-items:center;gap:8px;padding:8px 0;border-bottom:.5px solid var(--bord)}
+  .lvrow:last-child{border-bottom:none}
+  .lvtag{font-size:12px;font-weight:500;color:var(--tx2);min-width:68px;flex-shrink:0}
+  .lig{display:flex;align-items:center;gap:4px;flex:1}
+  .lig label{font-size:11px;color:var(--tx3);margin:0;white-space:nowrap}
+  .lig input{width:64px;flex:none}
+  .utag{font-size:11px;color:var(--tx3);white-space:nowrap}
+  /* BUTTON */
+  .btncalc{width:100%;height:44px;background:var(--blue);color:#fff;border:none;border-radius:var(--rs);font-size:14px;font-weight:600;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;transition:opacity .15s,transform .1s;font-family:inherit}
+  .btncalc:hover{opacity:.92}.btncalc:active{transform:scale(.98)}
+  .btncalc svg{width:18px;height:18px;stroke:#fff;fill:none}
+  /* RESULTS */
+  .mgrid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+  .met{background:var(--surf2);border-radius:var(--rs);padding:10px 12px}
+  .ml{font-size:11px;color:var(--tx3);margin-bottom:2px}
+  .mv{font-size:20px;font-weight:600;color:var(--tx);line-height:1.2}
+  .ms{font-size:11px;color:var(--tx3);margin-top:2px}
+  .rtab{width:100%;border-collapse:collapse;font-size:13px}
+  .rtab th{font-size:11px;font-weight:600;color:var(--tx3);text-align:left;padding:8px 10px;border-bottom:.5px solid var(--bord);background:var(--surf2)}
+  .rtab td{padding:8px 10px;border-bottom:.5px solid var(--bord);color:var(--tx)}
+  .rtab tr:last-child td{border-bottom:none}
+  .rtab tbody tr:hover{background:var(--surf2)}
+  .cb{display:inline-block;font-size:11px;font-weight:600;background:var(--bluebg);color:var(--bluetx);padding:2px 8px;border-radius:4px;white-space:nowrap}
+  .cg{display:inline-block;font-size:11px;font-weight:600;background:var(--greenbg);color:var(--greentx);padding:2px 8px;border-radius:4px;white-space:nowrap}
+  .ct{display:inline-block;font-size:11px;font-weight:600;background:#E1F5EE;color:#085041;padding:2px 8px;border-radius:4px;white-space:nowrap}
+  /* TABS */
+  .tabs{display:flex;gap:4px;border-bottom:.5px solid var(--bord)}
+  .tab{padding:8px 14px;font-size:13px;font-weight:500;cursor:pointer;color:var(--tx3);border-radius:var(--rs) var(--rs) 0 0;border:.5px solid transparent;border-bottom:none;display:flex;align-items:center;gap:6px;position:relative;bottom:-1px}
+  .tab svg{width:14px;height:14px;stroke:currentColor;fill:none}
+  .tab.active{background:var(--surf);border-color:var(--bord);border-bottom-color:var(--surf);color:var(--tx)}
+  .tpanel{display:none;padding-top:18px}.tpanel.active{display:block}
+  #ssvg{overflow-x:auto}
+  #ssvg svg{min-width:560px;width:100%;height:auto;display:block}
+  .empty{text-align:center;padding:48px 24px;color:var(--tx3);font-size:13px}
+  .empty svg{width:40px;height:40px;stroke:var(--tx3);fill:none;margin:0 auto 12px;display:block}
+  .notebox{font-size:12px;color:var(--tx3);line-height:1.65;background:var(--amberbg);border-radius:var(--rs);padding:10px 14px;border-left:3px solid var(--amber)}
+  .notebox strong{color:var(--ambertx)}
+  .sep{height:.5px;background:var(--bord);margin:12px 0}
+  .sh3{font-size:12px;font-weight:600;color:var(--tx3);text-transform:uppercase;letter-spacing:.07em;margin-bottom:8px;margin-top:4px}
+  @media(max-width:900px){.layout{grid-template-columns:1fr}.sidebar{border-right:none;border-bottom:.5px solid var(--bord)}.mgrid{grid-template-columns:repeat(2,1fr)}}
+  @media(max-width:500px){.g3{grid-template-columns:1fr 1fr}header h1{font-size:14px}.hbadge{display:none}}
+  @media print{header{position:static}.layout{grid-template-columns:1fr}.sidebar{page-break-after:always}.btncalc{display:none}.tabs{display:none}.tpanel{display:block!important}}
+</style>
+</head>
+<body>
+<header>
+  <div class="hico"><svg viewBox="0 0 24 24" stroke-width="1.8"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="3" y1="15" x2="21" y2="15"/><line x1="9" y1="3" x2="9" y2="21"/></svg></div>
+  <div><h1>Prédimensionnement Structure Métallique</h1><p>IPE / HEA / HEB &mdash; Eurocodes EC1 &amp; EC3 &mdash; Trame calculée automatiquement</p></div>
+  <span class="hbadge">&#9888; Estimation avant-projet &mdash; à vérifier par ingénieur</span>
+</header>
+
+<div class="layout">
+<aside class="sidebar">
+
+  <!-- DIMENSIONS -->
+  <div class="card">
+    <div class="ctitle"><svg viewBox="0 0 24 24" stroke-width="1.8"><rect x="2" y="3" width="20" height="18" rx="2"/><line x1="2" y1="9" x2="22" y2="9"/><line x1="8" y1="3" x2="8" y2="21"/></svg>Dimensions de la structure</div>
+    <div class="g2">
+      <div class="field"><label>Longueur <span>(m)</span></label><input type="number" id="L" value="60" min="5" max="500" step="1"></div>
+      <div class="field"><label>Largeur <span>(m)</span></label><input type="number" id="la" value="30" min="5" max="200" step="1"></div>
+    </div>
+  </div>
+
+  <!-- NIVEAUX & CHARGES -->
+  <div class="card">
+    <div class="ctitle"><svg viewBox="0 0 24 24" stroke-width="1.8"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>Niveaux &amp; Charges</div>
+    <div class="g2" style="margin-bottom:12px;">
+      <div class="field" style="margin:0"><label>Nombre de niveaux</label><input type="number" id="nbn" value="3" min="1" max="10" step="1" onchange="updL()"></div>
+      <div class="field" style="margin:0"><label>Usage principal</label>
+        <select id="usage" onchange="applyP()">
+          <option value="stockage">Stockage / Entrepôt</option>
+          <option value="industriel" selected>Industriel</option>
+          <option value="bureau">Bureau</option>
+          <option value="parking">Parking</option>
+          <option value="custom">Personnalisé</option>
+        </select>
+      </div>
+    </div>
+    <div id="lvc"></div>
+    <p style="font-size:11px;color:var(--tx3);margin-top:8px;">G = charges permanentes &nbsp;&middot;&nbsp; Q = charges d'exploitation <strong>(t/m²)</strong> &nbsp;&middot;&nbsp; H = hauteur de niveau <strong>(m)</strong></p>
+  </div>
+
+  <!-- ACIER -->
+  <div class="card">
+    <div class="ctitle"><svg viewBox="0 0 24 24" stroke-width="1.8"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg>Nuance d'acier</div>
+    <div class="acier-cards" id="acier-cards">
+      <div class="acier-card" id="ac-235" onclick="selAcier(235)">
+        <div class="ac-name">S235</div>
+        <div class="ac-fy">f<sub>y</sub> = 235 MPa</div>
+        <span class="ac-badge badge-eco">Économique</span>
+        <div class="ac-desc">Acier courant, charpentes légères, bâtiments non exposés. Soudabilité excellente.</div>
+      </div>
+      <div class="acier-card sel" id="ac-355" onclick="selAcier(355)">
+        <div class="ac-name">S355</div>
+        <div class="ac-fy">f<sub>y</sub> = 355 MPa</div>
+        <span class="ac-badge badge-std">Standard</span>
+        <div class="ac-desc">Référence industrielle. Grandes portées, charges élevées. Recommandé par défaut.</div>
+      </div>
+      <div class="acier-card" id="ac-460" onclick="selAcier(460)">
+        <div class="ac-name">S460</div>
+        <div class="ac-fy">f<sub>y</sub> = 460 MPa</div>
+        <span class="ac-badge badge-haut">Haute résistance</span>
+        <div class="ac-desc">Réduction de poids significative. Coût matière +20%. Exige un contrôle soudage renforcé.</div>
+      </div>
+    </div>
+    <input type="hidden" id="acier" value="355">
+    <div class="sep"></div>
+    <div class="g2">
+      <div class="field"><label>&gamma;<sub>G</sub> (perm.)</label><input type="number" id="gg" value="1.35" min="1.0" max="1.5" step="0.05"></div>
+      <div class="field"><label>&gamma;<sub>Q</sub> (expl.)</label><input type="number" id="gq" value="1.5" min="1.0" max="1.7" step="0.05"></div>
+    </div>
+  </div>
+
+  <!-- PORTÉES MAXIMALES -->
+  <div class="card">
+    <div class="ctitle"><svg viewBox="0 0 24 24" stroke-width="1.8"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>Portées maximales admissibles</div>
+    <p style="font-size:11px;color:var(--tx3);margin-bottom:10px;line-height:1.5;">
+      Définissent le maillage de la trame. Une portée plus grande = moins de poteaux, mais des profils plus lourds.
+      Plages courantes : <strong>5–8 m</strong> (charges lourdes) · <strong>6–10 m</strong> (industriel standard) · <strong>8–15 m</strong> (grandes halles).
+    </p>
+    <div class="g2">
+      <div class="field">
+        <label>Portée max long. <span>(m)</span></label>
+        <div class="portee-wrap">
+          <input type="number" id="pmaxL" value="9" min="2" max="30" step="0.5" oninput="chkPortee('L')">
+        </div>
+        <div class="alert alert-err" id="al-L-err"></div>
+        <div class="alert alert-warn" id="al-L-warn"></div>
+        <div class="alert alert-ok" id="al-L-ok"></div>
+      </div>
+      <div class="field">
+        <label>Portée max transv. <span>(m)</span></label>
+        <div class="portee-wrap">
+          <input type="number" id="pmaxT" value="7" min="2" max="30" step="0.5" oninput="chkPortee('T')">
+        </div>
+        <div class="alert alert-err" id="al-T-err"></div>
+        <div class="alert alert-warn" id="al-T-warn"></div>
+        <div class="alert alert-ok" id="al-T-ok"></div>
+      </div>
+    </div>
+  </div>
+
+  <button class="btncalc" onclick="calc()">
+    <svg viewBox="0 0 24 24" stroke-width="2"><rect x="4" y="2" width="16" height="20" rx="2"/><line x1="8" y1="10" x2="16" y2="10"/><line x1="8" y1="14" x2="16" y2="14"/><line x1="8" y1="6" x2="16" y2="6"/></svg>
+    Calculer le prédimensionnement
+  </button>
+
+</aside>
+<main class="main">
+  <div class="card" style="padding-bottom:0;">
+    <div class="tabs">
+      <div class="tab active" onclick="showT('r')" id="tb-r"><svg viewBox="0 0 24 24" stroke-width="1.8"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="3" y1="15" x2="21" y2="15"/><line x1="9" y1="3" x2="9" y2="21"/></svg>Résultats</div>
+      <div class="tab" onclick="showT('s')" id="tb-s"><svg viewBox="0 0 24 24" stroke-width="1.8"><rect x="3" y="3" width="18" height="18" rx="2"/><polyline points="3 9 9 9 9 3"/><polyline points="21 9 15 9 15 3"/><polyline points="3 15 9 15 9 21"/><polyline points="21 15 15 15 15 21"/></svg>Schéma</div>
+      <div class="tab" onclick="showT('n')" id="tb-n"><svg viewBox="0 0 24 24" stroke-width="1.8"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>Note de calcul</div>
+    </div>
+    <div id="tp-r" class="tpanel active"><div id="rc"><div class="empty"><svg viewBox="0 0 24 24"><rect x="4" y="2" width="16" height="20" rx="2"/><line x1="8" y1="10" x2="16" y2="10"/><line x1="8" y1="14" x2="16" y2="14"/><line x1="8" y1="6" x2="16" y2="6"/></svg>Saisissez vos données et cliquez sur <strong>Calculer</strong>.</div></div></div>
+    <div id="tp-s" class="tpanel"><div id="sc"><div class="empty"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><polyline points="3 9 9 9 9 3"/><polyline points="21 9 15 9 15 3"/><polyline points="3 15 9 15 9 21"/><polyline points="21 15 15 15 15 21"/></svg>Le schéma apparaîtra après le calcul.</div></div></div>
+    <div id="tp-n" class="tpanel"><div id="nc"><div class="empty"><svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>La note apparaîtra après le calcul.</div></div></div>
+  </div>
+</main>
+</div>
+
+<script>
+/* ============================================================ PROFILS ============================================================ */
+var PP=[
+  {name:'IPE 160',Wpl:123,A:20.1},{name:'IPE 180',Wpl:166,A:23.9},{name:'IPE 200',Wpl:220,A:28.5},
+  {name:'IPE 220',Wpl:285,A:33.4},{name:'IPE 240',Wpl:367,A:39.1},{name:'IPE 270',Wpl:484,A:45.9},
+  {name:'IPE 300',Wpl:628,A:53.8},{name:'IPE 330',Wpl:804,A:62.6},{name:'IPE 360',Wpl:1019,A:72.7},
+  {name:'IPE 400',Wpl:1307,A:84.5},{name:'IPE 450',Wpl:1702,A:98.8},{name:'IPE 500',Wpl:2194,A:116},
+  {name:'IPE 550',Wpl:2787,A:134},{name:'IPE 600',Wpl:3512,A:156}
+];
+var PC=[
+  {name:'HEA 120',A:25.3},{name:'HEA 140',A:31.4},{name:'HEA 160',A:38.8},{name:'HEA 180',A:45.3},
+  {name:'HEA 200',A:53.8},{name:'HEA 220',A:64.3},{name:'HEA 240',A:76.8},{name:'HEA 260',A:86.8},
+  {name:'HEA 280',A:97.3},{name:'HEA 300',A:112.5},{name:'HEB 260',A:118.4},{name:'HEB 280',A:131.4},
+  {name:'HEB 300',A:149.1},{name:'HEB 320',A:161.3},{name:'HEB 340',A:170.9},{name:'HEB 360',A:180.6},
+  {name:'HEB 400',A:197.8},{name:'HEB 450',A:218.0},{name:'HEB 500',A:238.6},{name:'HEB 550',A:254.1},
+  {name:'HEB 600',A:270.0}
+];
+var PS={
+  stockage:  {g:0.30,q:1.00,qr:0.08},
+  industriel:{g:0.20,q:0.75,qr:0.06},
+  bureau:    {g:0.15,q:0.25,qr:0.06},
+  parking:   {g:0.20,q:0.25,qr:0.08},
+  custom:    {g:0.15,q:0.50,qr:0.06}
+};
+var GG=9.81;
+
+function v(id){return document.getElementById(id);}
+
+/* ============================================================ SÉLECTION ACIER ============================================================ */
+function selAcier(fy){
+  [235,355,460].forEach(function(f){
+    v('ac-'+f).classList.toggle('sel', f===fy);
+  });
+  v('acier').value=fy;
+}
+
+/* ============================================================ VALIDATION PORTÉES ============================================================ */
+function chkPortee(dir){
+  var id='pmaxL', eid='al-L';
+  if(dir==='T'){id='pmaxT'; eid='al-T';}
+  var val=parseFloat(v(id).value)||0;
+  var inp=v(id);
+  var elErr=v(eid+'-err'), elWarn=v(eid+'-warn'), elOk=v(eid+'-ok');
+  elErr.classList.remove('show'); elWarn.classList.remove('show'); elOk.classList.remove('show');
+  inp.classList.remove('warn','err');
+
+  if(val<=0||isNaN(val)){
+    return;
+  } else if(val<3){
+    inp.classList.add('err');
+    elErr.textContent='Valeur irréaliste (< 3 m) : une travée aussi courte est techniquement possible mais économiquement absurde pour une structure industrielle. Minimum recommandé : 4 m.';
+    elErr.classList.add('show');
+  } else if(val<4){
+    inp.classList.add('warn');
+    elWarn.textContent='Portée courte (< 4 m) : entraîne un grand nombre de poteaux. Acceptable pour stockage lourd sur racks ou contraintes d\'implantation fortes.';
+    elWarn.classList.add('show');
+  } else if(val<=6){
+    elOk.textContent='Portée courte à standard. Idéale pour charges très lourdes (> 1 t/m²), mezzanines ou structures multi-niveaux.';
+    elOk.classList.add('show');
+  } else if(val<=10){
+    elOk.textContent='Portée standard industrielle. Bon compromis poids de structure / nombre de poteaux.';
+    elOk.classList.add('show');
+  } else if(val<=15){
+    inp.classList.add('warn');
+    elWarn.textContent='Grande portée (> 10 m) : profils plus lourds (IPE 400+). Vérifier la faisabilité de la hauteur de poutre avec l\'encombrement disponible.';
+    elWarn.classList.add('show');
+  } else if(val<=20){
+    inp.classList.add('warn');
+    elWarn.textContent='Très grande portée (> 15 m) : nécessite des poutres reconstituées soudées ou des fermes. L\'outil IPE/HEA peut sous-estimer significativement les sections.';
+    elWarn.classList.add('show');
+  } else {
+    inp.classList.add('err');
+    elErr.textContent='Portée irréaliste pour des profilés laminés standards (> 20 m). Au-delà, des fermes, poutres en treillis ou portiques spéciaux sont nécessaires. Résultats non fiables.';
+    elErr.classList.add('show');
+  }
+}
+
+/* ============================================================ NIVEAUX ============================================================ */
+function updL(){
+  var n=Math.max(1,Math.min(10,parseInt(v('nbn').value)||3));
+  var p=PS[v('usage').value]||PS.industriel;
+  var c=v('lvc'); c.innerHTML='';
+  // Hauteurs par défaut selon usage
+  var hDefaut=v('usage').value==='parking'?2.5:(v('usage').value==='bureau'?3.0:4.0);
+  for(var i=n;i>=1;i--){
+    var ir=i===n;
+    var lbl=ir?'Toiture':'Niveau '+i;
+    var gd=ir?(p.g*0.7).toFixed(2):p.g.toFixed(2);
+    var qd=ir?p.qr.toFixed(2):p.q.toFixed(2);
+    // Toiture souvent plus basse (acrotère), sinon hauteur standard
+    var hd=ir?(hDefaut-0.5).toFixed(1):hDefaut.toFixed(1);
+    c.innerHTML+='<div class="lvrow">'
+      +'<span class="lvtag">'+lbl+'</span>'
+      +'<div class="lig"><label>G</label><input type="number" id="g_'+i+'" value="'+gd+'" min="0" max="10" step="0.01"></div>'
+      +'<div class="lig"><label>Q</label><input type="number" id="q_'+i+'" value="'+qd+'" min="0" max="20" step="0.01"></div>'
+      +'<div class="lig"><label>H&nbsp;<span style="font-size:10px;color:var(--tx3)">(m)</span></label>'
+      +'<input type="number" id="h_'+i+'" value="'+hd+'" min="2.0" max="20" step="0.5"></div>'
+      +'</div>';
+  }
+}
+function applyP(){
+  var n=parseInt(v('nbn').value)||3;
+  var p=PS[v('usage').value]||PS.industriel;
+  var hDefaut=v('usage').value==='parking'?2.5:(v('usage').value==='bureau'?3.0:4.0);
+  for(var i=1;i<=n;i++){
+    var ir=i===n;
+    var ge=v('g_'+i),qe=v('q_'+i),he=v('h_'+i);
+    if(ge) ge.value=ir?(p.g*0.7).toFixed(2):p.g.toFixed(2);
+    if(qe) qe.value=ir?p.qr.toFixed(2):p.q.toFixed(2);
+    if(he) he.value=ir?(hDefaut-0.5).toFixed(1):hDefaut.toFixed(1);
+  }
+}
+
+/* ============================================================ PROFILS ============================================================ */
+function spoutre(M_kNm,fy){
+  var wr=M_kNm*1e6/fy/1000;
+  for(var i=0;i<PP.length;i++){if(PP[i].Wpl>=wr*1.05)return PP[i];}
+  return PP[PP.length-1];
+}
+function spoteau(N_kN,fy){
+  var ar=N_kN*10/(fy*0.70);
+  for(var i=0;i<PC.length;i++){if(PC[i].A>=ar*1.05)return PC[i];}
+  return PC[PC.length-1];
+}
+
+/* ============================================================ CALCUL PRINCIPAL ============================================================ */
+function calcTravees(dim,porteeMax){
+  var n=Math.ceil(dim/porteeMax);
+  n=Math.max(1,n);
+  return {n:n, portee:dim/n};
+}
+
+function calc(){
+  var L   =parseFloat(v('L').value)||60;
+  var la  =parseFloat(v('la').value)||30;
+  /* hauteurs lues par niveau */
+  var pmL =parseFloat(v('pmaxL').value)||9;
+  var pmT =parseFloat(v('pmaxT').value)||7;
+  var n   =Math.max(1,Math.min(10,parseInt(v('nbn').value)||3));
+  var gg  =parseFloat(v('gg').value)||1.35;
+  var gqv =parseFloat(v('gq').value)||1.50;
+  var fy  =parseInt(v('acier').value)||355;
+
+  var resL=calcTravees(L,pmL);  var tl=resL.portee; var ntL=resL.n;
+  var resT=calcTravees(la,pmT); var tt=resT.portee; var ntT=resT.n;
+  var nfl=ntL+1; var nft=ntT+1; var npt=nfl*nft; var st=tl*tt;
+
+  var lvs=[];
+  var hTotal=0;
+  for(var i=1;i<=n;i++){
+    var gt=parseFloat(v('g_'+i)?v('g_'+i).value:0.20)||0;
+    var qt=parseFloat(v('q_'+i)?v('q_'+i).value:0.75)||0;
+    var hi=parseFloat(v('h_'+i)?v('h_'+i).value:4.0)||4.0;
+    var gk=gt*GG; var qk=qt*GG; var pu=gg*gk+gqv*qk;
+    var lbl=i===n?'Toiture':'Niveau '+i;
+    hTotal+=hi;
+    lvs.push({i:i,gt:gt,qt:qt,gk:gk,qk:qk,pu:pu,lbl:lbl,h:hi});
+  }
+  var h=hTotal/n; /* hauteur moyenne pour compatibilité calcul flambement */
+
+  var rp=[],rL=[],rT=[],cum=0;
+  for(var i=n;i>=1;i--){
+    var lv=lvs[i-1];
+    cum+=lv.pu*st;
+    var qLinL=lv.pu*(tt/2); var ML=qLinL*tl*tl/8;
+    var qLinT=lv.pu*(tl/2); var MT=qLinT*tt*tt/8;
+    rL.push({niv:lv.lbl,M:ML,q:qLinL,p:spoutre(ML,fy)});
+    rT.push({niv:lv.lbl,M:MT,q:qLinT,p:spoutre(MT,fy)});
+    rp.push({niv:lv.lbl,N:cum,p:spoteau(cum,fy)});
+  }
+
+  var d={L:L,la:la,h:h,hTotal:hTotal,tl:tl,tt:tt,pmL:pmL,pmT:pmT,
+    n:n,fy:fy,gg:gg,gq:gqv,ntL:ntL,ntT:ntT,nfl:nfl,nft:nft,npt:npt,st:st,
+    lvs:lvs,rp:rp,rL:rL,rT:rT};
+  rRes(d); rSch(d); rNote(d); showT('r');
+}
+
+/* ============================================================ RÉSULTATS ============================================================ */
+function rRes(d){
+  var h='<div class="mgrid" style="margin-bottom:14px;">'
+    +'<div class="met"><div class="ml">Travée longitudinale</div><div class="mv">'+d.tl.toFixed(2)+'</div><div class="ms">m &mdash; '+d.ntL+' trav. ('+d.L+'&thinsp;m / '+d.ntL+')</div></div>'
+    +'<div class="met"><div class="ml">Travée transversale</div><div class="mv">'+d.tt.toFixed(2)+'</div><div class="ms">m &mdash; '+d.ntT+' trav. ('+d.la+'&thinsp;m / '+d.ntT+')</div></div>'
+    +'<div class="met"><div class="ml">Poteaux totaux</div><div class="mv">'+d.npt+'</div><div class="ms">'+d.nfl+' &times; '+d.nft+' files</div></div>'
+    +'<div class="met"><div class="ml">Surface par poteau</div><div class="mv">'+d.st.toFixed(1)+'</div><div class="ms">m² tributaire</div></div>'
+    +'<div class="met"><div class="ml">Hauteur totale</div><div class="mv">'+d.hTotal.toFixed(1)+'</div><div class="ms">m (somme des niveaux)</div></div>'
+    +'<div class="met"><div class="ml">Acier</div><div class="mv">S'+d.fy+'</div><div class="ms">f<sub>y</sub> = '+d.fy+' MPa</div></div>'
+    +'</div>';
+
+  h+='<p class="sh3">Poteaux &mdash; Descente de charges cumulative</p>';
+  h+='<div style="overflow-x:auto;margin-bottom:16px;"><table class="rtab"><thead><tr><th>Niveau</th><th>N<sub>sd</sub> (kN)</th><th>N<sub>sd</sub> (t)</th><th>Profil</th><th>A (cm²)</th></tr></thead><tbody>';
+  d.rp.forEach(function(r){h+='<tr><td>'+r.niv+'</td><td>'+r.N.toFixed(0)+'</td><td>'+(r.N/GG).toFixed(1)+'</td><td><span class="cb">'+r.p.name+'</span></td><td>'+r.p.A+'</td></tr>';});
+  h+='</tbody></table></div>';
+
+  h+='<p class="sh3">Poutres longitudinales &mdash; Travée '+d.tl.toFixed(2)+' m</p>';
+  h+='<div style="overflow-x:auto;margin-bottom:16px;"><table class="rtab"><thead><tr><th>Niveau</th><th>q (kN/m)</th><th>M<sub>sd</sub> (kN&middot;m)</th><th>Profil</th><th>W<sub>pl</sub> (cm³)</th></tr></thead><tbody>';
+  d.rL.forEach(function(r){h+='<tr><td>'+r.niv+'</td><td>'+r.q.toFixed(1)+'</td><td>'+r.M.toFixed(1)+'</td><td><span class="cg">'+r.p.name+'</span></td><td>'+r.p.Wpl+'</td></tr>';});
+  h+='</tbody></table></div>';
+
+  h+='<p class="sh3">Poutres transversales &mdash; Travée '+d.tt.toFixed(2)+' m</p>';
+  h+='<div style="overflow-x:auto;margin-bottom:16px;"><table class="rtab"><thead><tr><th>Niveau</th><th>q (kN/m)</th><th>M<sub>sd</sub> (kN&middot;m)</th><th>Profil</th><th>W<sub>pl</sub> (cm³)</th></tr></thead><tbody>';
+  d.rT.forEach(function(r){h+='<tr><td>'+r.niv+'</td><td>'+r.q.toFixed(1)+'</td><td>'+r.M.toFixed(1)+'</td><td><span class="ct">'+r.p.name+'</span></td><td>'+r.p.Wpl+'</td></tr>';});
+  h+='</tbody></table></div>';
+
+  v('rc').innerHTML=h;
+}
+
+/* ============================================================ SCHÉMA SVG ============================================================ */
+function rSch(d){
+  var W=820,PAD=58,RPAD=200,dW=W-PAD-RPAD;
+  var nC=Math.min(d.nfl,8),nL=Math.min(d.nft,6),nN=Math.min(d.n,8);
+  /* Hauteurs proportionnelles par niveau */
+  var maxH=440;
+  var hLvs=[]; /* hauteurs en pixels par niveau (du bas vers le haut = index 0=niv1) */
+  var hSum=0;
+  for(var i=0;i<nN;i++) hSum+=d.lvs[i]?d.lvs[i].h:d.h;
+  for(var i=0;i<nN;i++){var hi=d.lvs[i]?d.lvs[i].h:d.h; hLvs.push(Math.max(45,hi/hSum*maxH));}
+  var eH=0; for(var i=0;i<nN;i++) eH+=hLvs[i];
+  var tW=dW/(nC-1||1);
+  var bY=PAD+eH; var s='';
+
+  s+='<line x1="'+(PAD-22)+'" y1="'+(bY+2)+'" x2="'+(PAD+(nC-1)*tW+22)+'" y2="'+(bY+2)+'" stroke="#888" stroke-width="1.5"/>';
+  for(var x=PAD-22;x<=PAD+(nC-1)*tW+22;x+=12)
+    s+='<line x1="'+x+'" y1="'+(bY+2)+'" x2="'+(x-8)+'" y2="'+(bY+12)+'" stroke="#888" stroke-width="0.8" opacity="0.35"/>';
+
+  /* Calcul des Y cumulés par niveau */
+  var nivY=[]; var cumY=0;
+  for(var i=0;i<nN;i++){cumY+=hLvs[i]; nivY.push(cumY);}
+
+  for(var col=0;col<nC;col++){
+    var cx=PAD+col*tW;
+    for(var niv=0;niv<nN;niv++){
+      var y1=bY-nivY[niv],y2=(niv===0)?bY:bY-nivY[niv-1];
+      var idx=Math.min(niv,d.rp.length-1);
+      var pr=d.rp[d.rp.length-1-idx]||d.rp[0];
+      var hb=(pr&&pr.p&&pr.p.name||'').indexOf('HEB')===0;
+      s+='<line x1="'+cx+'" y1="'+y1+'" x2="'+cx+'" y2="'+y2+'" stroke="'+(hb?'#533AB7':'#185FA5')+'" stroke-width="'+(hb?5:3.5)+'" stroke-linecap="round"/>';
+    }
+    s+='<polygon points="'+cx+','+(bY+2)+' '+(cx-10)+','+(bY+18)+' '+(cx+10)+','+(bY+18)+'" fill="#888" opacity="0.22"/>';
+    if(nC<=8) s+='<text x="'+cx+'" y="'+(bY+32)+'" text-anchor="middle" font-size="10" fill="#888" font-family="inherit">'+String.fromCharCode(65+col)+'</text>';
+  }
+
+  for(var niv=0;niv<nN;niv++){
+    var y=bY-nivY[niv];
+    var idx2=nN-1-niv;
+    var prL=d.rL[Math.min(idx2,d.rL.length-1)]||d.rL[0];
+    var lg=parseInt((prL&&prL.p&&prL.p.name||'IPE 200').replace(/\D/g,''))>=400;
+    for(var col2=0;col2<nC-1;col2++){
+      var x1=PAD+col2*tW,x2=PAD+(col2+1)*tW;
+      s+='<line x1="'+(x1+2)+'" y1="'+y+'" x2="'+(x2-2)+'" y2="'+y+'" stroke="'+(lg?'#0F6E56':'#1D9E75')+'" stroke-width="3" stroke-linecap="round"/>';
+      s+='<line x1="'+(x1+2)+'" y1="'+y+'" x2="'+(x1+11)+'" y2="'+(y+7)+'" stroke="'+(lg?'#0F6E56':'#1D9E75')+'" stroke-width="1.2" opacity="0.55"/>';
+      s+='<line x1="'+(x2-2)+'" y1="'+y+'" x2="'+(x2-11)+'" y2="'+(y+7)+'" stroke="'+(lg?'#0F6E56':'#1D9E75')+'" stroke-width="1.2" opacity="0.55"/>';
+    }
+  }
+
+  for(var niv2=0;niv2<nN;niv2++){
+    var ya=bY-nivY[niv2];
+    var yaPrev=(niv2===0)?bY:bY-nivY[niv2-1];
+    var ym=(ya+yaPrev)/2;
+    var ia=nN-1-niv2;
+    var lva=d.rp[Math.min(ia,d.rp.length-1)];
+    var lba=d.rL[Math.min(ia,d.rL.length-1)];
+    var xR=PAD+(nC-1)*tW;
+    var hiLabel=d.lvs[niv2]?d.lvs[niv2].h:d.h;
+    s+='<line x1="'+(xR+8)+'" y1="'+ya+'" x2="'+(xR+22)+'" y2="'+ya+'" stroke="#888" stroke-width="0.5" stroke-dasharray="3 2" opacity="0.6"/>';
+    s+='<text x="'+(xR+26)+'" y="'+(ya+4)+'" font-size="10" fill="#555" font-family="inherit" font-weight="600">'+(lva?lva.niv:'')+'</text>';
+    if(lba) s+='<text x="'+(xR+26)+'" y="'+(ya+15)+'" font-size="9" fill="#888" font-family="inherit">'+(lba.p?lba.p.name:'')+'</text>';
+    s+='<text x="'+(PAD-8)+'" y="'+(ym+4)+'" text-anchor="end" font-size="9" fill="#888" font-family="inherit">'+hiLabel+' m</text>';
+    s+='<line x1="'+(PAD-6)+'" y1="'+ya+'" x2="'+(PAD-6)+'" y2="'+yaPrev+'" stroke="#888" stroke-width="0.5" marker-end="url(#arr)" marker-start="url(#arr)" opacity="0.45"/>';
+  }
+
+  var yc=bY+46;
+  s+='<line x1="'+PAD+'" y1="'+yc+'" x2="'+(PAD+tW)+'" y2="'+yc+'" stroke="#888" stroke-width="0.7" marker-end="url(#arr)" marker-start="url(#arr)" opacity="0.7"/>';
+  s+='<text x="'+(PAD+tW/2)+'" y="'+(yc+12)+'" text-anchor="middle" font-size="10" fill="#555" font-family="inherit">'+d.tl.toFixed(2)+' m</text>';
+  s+='<text x="'+PAD+'" y="'+(PAD-14)+'" font-size="11" font-weight="700" fill="#555" font-family="inherit" letter-spacing=".05em">VUE DE FACE &mdash; COUPE LONGITUDINALE</text>';
+
+  var pBY=bY+82;
+  var pW=Math.min(dW*0.75,450),pH=Math.min(130,pW*(nL-1)/(nC-1||1));
+  var cW=pW/(nC-1||1),cH=pH/(nL-1||1);
+  s+='<text x="'+PAD+'" y="'+(pBY-10)+'" font-size="11" font-weight="700" fill="#555" font-family="inherit" letter-spacing=".05em">VUE EN PLAN &mdash; TRAME DES POTEAUX</text>';
+
+  for(var c=0;c<nC;c++){
+    for(var r=0;r<nL;r++){
+      var px=PAD+c*cW,py=pBY+r*cH;
+      if(c<nC-1) s+='<line x1="'+px+'" y1="'+py+'" x2="'+(px+cW)+'" y2="'+py+'" stroke="#aaa" stroke-width="0.8" stroke-dasharray="5 3"/>';
+      if(r<nL-1) s+='<line x1="'+px+'" y1="'+py+'" x2="'+px+'" y2="'+(py+cH)+'" stroke="#aaa" stroke-width="0.8" stroke-dasharray="5 3"/>';
+      var hb2=d.rp.length&&(d.rp[d.rp.length-1].p.name||'').indexOf('HEB')===0;
+      s+='<rect x="'+(px-5)+'" y="'+(py-5)+'" width="10" height="10" fill="'+(hb2?'#533AB7':'#185FA5')+'" rx="2" opacity="0.85"/>';
+    }
+  }
+  if(d.nfl>nC) s+='<text x="'+(PAD+nC*cW+8)+'" y="'+(pBY+pH/2+4)+'" font-size="10" fill="#888" font-family="inherit">... '+d.nfl+' files</text>';
+
+  var pCY=pBY+pH+20;
+  s+='<line x1="'+PAD+'" y1="'+pCY+'" x2="'+(PAD+cW)+'" y2="'+pCY+'" stroke="#888" stroke-width="0.7" marker-end="url(#arr)" marker-start="url(#arr)" opacity="0.7"/>';
+  s+='<text x="'+(PAD+cW/2)+'" y="'+(pCY+12)+'" text-anchor="middle" font-size="10" fill="#555" font-family="inherit">'+d.tl.toFixed(2)+' m</text>';
+  s+='<line x1="'+(PAD+nC*cW+20)+'" y1="'+pBY+'" x2="'+(PAD+nC*cW+20)+'" y2="'+(pBY+cH)+'" stroke="#888" stroke-width="0.7" marker-end="url(#arr)" marker-start="url(#arr)" opacity="0.7"/>';
+  s+='<text x="'+(PAD+nC*cW+32)+'" y="'+(pBY+cH/2+4)+'" font-size="10" fill="#555" font-family="inherit">'+d.tt.toFixed(2)+' m</text>';
+
+  var lY=pCY+28;
+  s+='<rect x="'+PAD+'" y="'+lY+'" width="10" height="10" fill="#185FA5" rx="2"/>';
+  s+='<text x="'+(PAD+14)+'" y="'+(lY+9)+'" font-size="10" fill="#555" font-family="inherit">Poteaux ('+(d.rp[d.rp.length-1]?d.rp[d.rp.length-1].p.name:'—')+' au Niv. 1)</text>';
+  s+='<rect x="'+(PAD+230)+'" y="'+lY+'" width="10" height="4" fill="#1D9E75" rx="1"/>';
+  s+='<text x="'+(PAD+244)+'" y="'+(lY+9)+'" font-size="10" fill="#555" font-family="inherit">Poutres long. ('+(d.rL[d.rL.length-1]?d.rL[d.rL.length-1].p.name:'—')+')</text>';
+  s+='<rect x="'+(PAD+450)+'" y="'+lY+'" width="10" height="4" fill="#0F6E56" rx="1"/>';
+  s+='<text x="'+(PAD+464)+'" y="'+(lY+9)+'" font-size="10" fill="#555" font-family="inherit">Poutres transv. ('+(d.rT[d.rT.length-1]?d.rT[d.rT.length-1].p.name:'—')+')</text>';
+
+  var svH=lY+24;
+  v('sc').innerHTML='<div id="ssvg"><svg width="100%" viewBox="0 0 '+W+' '+svH+'" role="img" style="max-width:100%;">'
+    +'<title>Schéma de principe</title>'
+    +'<defs><marker id="arr" viewBox="0 0 10 10" refX="5" refY="5" markerWidth="5" markerHeight="5" orient="auto-start-reverse">'
+    +'<path d="M2 1.5L7.5 5L2 8.5" fill="none" stroke="context-stroke" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>'
+    +'</marker></defs>'+s+'</svg></div>';
+}
+
+/* ============================================================ NOTE DE CALCUL ============================================================ */
+function rNote(d){
+  var Nrdc=d.rp[d.rp.length-1]?d.rp[d.rp.length-1].N:0;
+  var acierDesc={235:'Acier courant, charpentes légères, soudabilité excellente.',355:'Référence industrielle, recommandé par défaut.',460:'Haute résistance, réduction de masse ~25%, contrôle soudage renforcé.'};
+  var h='';
+
+  h+='<div style="background:var(--surf2);border-radius:var(--rs);padding:14px 16px;margin-bottom:14px;">'
+    +'<h3 style="font-size:13px;font-weight:600;color:var(--tx);margin-bottom:10px;">1. Données &amp; Trame calculée</h3>'
+    +'<table style="width:100%;font-size:12px;border-collapse:collapse;">'
+    +'<tr><td style="color:var(--tx3);padding:3px 0;width:55%">Dimensions en plan</td><td style="font-weight:500">'+d.L+' &times; '+d.la+' m</td></tr>'
+    +'<tr><td style="color:var(--tx3);padding:3px 0">Hauteur totale</td><td style="font-weight:500">'+d.hTotal.toFixed(1)+' m (détail par niveau dans le tableau)</td></tr>'
+    +'<tr><td style="color:var(--tx3);padding:3px 0">Portée max. longitudinale</td><td style="font-weight:500">&le; '+d.pmL+' m</td></tr>'
+    +'<tr><td style="color:var(--tx3);padding:3px 0">Portée max. transversale</td><td style="font-weight:500">&le; '+d.pmT+' m</td></tr>'
+    +'<tr><td style="color:var(--tx3);padding:3px 0">Travées longitudinales</td><td style="font-weight:500">'+d.ntL+' &times; <strong>'+d.tl.toFixed(3)+' m</strong> (='+d.L+'/'+d.ntL+')</td></tr>'
+    +'<tr><td style="color:var(--tx3);padding:3px 0">Travées transversales</td><td style="font-weight:500">'+d.ntT+' &times; <strong>'+d.tt.toFixed(3)+' m</strong> (='+d.la+'/'+d.ntT+')</td></tr>'
+    +'<tr><td style="color:var(--tx3);padding:3px 0">Files de poteaux</td><td style="font-weight:500">'+d.nfl+' long. &times; '+d.nft+' transv. = <strong>'+d.npt+' poteaux</strong></td></tr>'
+    +'<tr><td style="color:var(--tx3);padding:3px 0">Surface tributaire / poteau</td><td style="font-weight:500">'+d.st.toFixed(2)+' m²</td></tr>'
+    +'<tr><td style="color:var(--tx3);padding:3px 0">Nuance acier</td><td style="font-weight:500">S'+d.fy+' &mdash; '+acierDesc[d.fy]+'</td></tr>'
+    +'<tr><td style="color:var(--tx3);padding:3px 0">Coefficients EC1</td><td style="font-weight:500">&gamma;<sub>G</sub> = '+d.gg+' &nbsp;&middot;&nbsp; &gamma;<sub>Q</sub> = '+d.gq+'</td></tr>'
+    +'</table></div>';
+
+  h+='<div style="background:var(--surf2);border-radius:var(--rs);padding:14px 16px;margin-bottom:14px;">'
+    +'<h3 style="font-size:13px;font-weight:600;color:var(--tx);margin-bottom:10px;">2. Charges par niveau</h3>'
+    +'<p style="font-size:12px;color:var(--tx2);margin-bottom:8px;">1 t/m² = 9,81 kN/m² &nbsp;&mdash;&nbsp; E<sub>d</sub> = &gamma;<sub>G</sub>&middot;G + &gamma;<sub>Q</sub>&middot;Q</p>'
+    +'<table style="width:100%;font-size:12px;border-collapse:collapse;">'
+    +'<thead><tr style="border-bottom:.5px solid var(--bord)">'
+    +'<th style="text-align:left;padding:4px 0;color:var(--tx3);font-weight:600">Niveau</th>'
+    +'<th style="text-align:right;color:var(--tx3);font-weight:600">H (m)</th>'
+    +'<th style="text-align:right;color:var(--tx3);font-weight:600">G (t/m²)</th>'
+    +'<th style="text-align:right;color:var(--tx3);font-weight:600">Q (t/m²)</th>'
+    +'<th style="text-align:right;color:var(--tx3);font-weight:600">G (kN/m²)</th>'
+    +'<th style="text-align:right;color:var(--tx3);font-weight:600">Q (kN/m²)</th>'
+    +'<th style="text-align:right;color:var(--tx3);font-weight:600">p<sub>u</sub> (kN/m²)</th>'
+    +'</tr></thead><tbody>';
+  d.lvs.forEach(function(lv){
+    h+='<tr style="border-bottom:.5px solid var(--bord)"><td style="padding:4px 0">'+lv.lbl+'</td>'
+      +'<td style="text-align:right;font-weight:500">'+lv.h.toFixed(1)+'</td>'
+      +'<td style="text-align:right">'+lv.gt.toFixed(2)+'</td><td style="text-align:right">'+lv.qt.toFixed(2)+'</td>'
+      +'<td style="text-align:right">'+lv.gk.toFixed(2)+'</td><td style="text-align:right">'+lv.qk.toFixed(2)+'</td>'
+      +'<td style="text-align:right;font-weight:600">'+lv.pu.toFixed(2)+'</td></tr>';
+  });
+  h+='</tbody></table></div>';
+
+  h+='<div style="background:var(--surf2);border-radius:var(--rs);padding:14px 16px;margin-bottom:14px;">'
+    +'<h3 style="font-size:13px;font-weight:600;color:var(--tx);margin-bottom:8px;">3. Algorithme de trame</h3>'
+    +'<p style="font-size:12px;color:var(--tx2);line-height:1.8">'
+    +'N<sub>trav</sub> = ceil(Dimension / Portée<sub>max</sub>)<br>'
+    +'Long. : ceil('+d.L+' / '+d.pmL+') = <strong>'+d.ntL+' travée'+(d.ntL>1?'s':'')+' de '+d.tl.toFixed(3)+' m</strong><br>'
+    +'Transv. : ceil('+d.la+' / '+d.pmT+') = <strong>'+d.ntT+' travée'+(d.ntT>1?'s':'')+' de '+d.tt.toFixed(3)+' m</strong>'
+    +'</p></div>';
+
+  h+='<div style="background:var(--surf2);border-radius:var(--rs);padding:14px 16px;margin-bottom:14px;">'
+    +'<h3 style="font-size:13px;font-weight:600;color:var(--tx);margin-bottom:8px;">4. Méthode &mdash; Poutres</h3>'
+    +'<p style="font-size:12px;color:var(--tx2);line-height:1.8">'
+    +'Schéma statique : poutre bi-appuyée, charge uniformément répartie.<br>'
+    +'q = p<sub>u</sub> &times; (demi-travée perpendiculaire) &nbsp;&mdash;&nbsp; M<sub>sd</sub> = q &middot; L&sup2; / 8<br>'
+    +'W<sub>pl,req</sub> = M<sub>sd</sub> / f<sub>yd</sub> &times; 1,05 &nbsp;&rarr;&nbsp; profil IPE sélectionné'
+    +'</p></div>';
+
+  h+='<div style="background:var(--surf2);border-radius:var(--rs);padding:14px 16px;margin-bottom:14px;">'
+    +'<h3 style="font-size:13px;font-weight:600;color:var(--tx);margin-bottom:8px;">5. Méthode &mdash; Poteaux</h3>'
+    +'<p style="font-size:12px;color:var(--tx2);line-height:1.8">'
+    +'Descente de charges cumulative du haut vers le bas.<br>'
+    +'N<sub>sd,Niv.1</sub> = <strong>'+Nrdc.toFixed(0)+' kN</strong> (&asymp; '+(Nrdc/GG).toFixed(0)+' t)<br>'
+    +'Flambement : N<sub>Rd</sub> = &chi;&middot;A&middot;f<sub>yd</sub> &nbsp;&mdash;&nbsp; &chi; = 0,70 (longueur libre = hauteur du niveau concerné)<br>'
+    +'A<sub>req</sub> = N<sub>sd</sub> / (&chi;&middot;f<sub>yd</sub>) &times; 1,05 &nbsp;&rarr;&nbsp; profil HEA/HEB'
+    +'</p></div>';
+
+  h+='<div class="notebox"><strong>&#9888; Avertissement :</strong> Estimation préliminaire (&plusmn;25%) pour avant-projet uniquement.<br>'
+    +'Non pris en compte : vent (EC1-4), séisme (EC8), contreventements, vérification ELS (flèches),<br>'
+    +'assemblages, effets du 2<sup>nd</sup> ordre, charges dynamiques ou de fatigue.</div>';
+
+  v('nc').innerHTML=h;
+}
+
+/* ============================================================ NAVIGATION ============================================================ */
+function showT(t){
+  ['r','s','n'].forEach(function(k){
+    v('tp-'+k).classList.toggle('active',k===t);
+    v('tb-'+k).classList.toggle('active',k===t);
+  });
+}
+
+/* INIT */
+updL();
+chkPortee('L');
+chkPortee('T');
+</script>
+</body>
+</html>
